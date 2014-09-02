@@ -1,0 +1,24 @@
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+/* Firefox 설정 화면중 애드온 감추는 곳에 나올때 아이콘 모양 */
+#dmapex_toolbarButton {
+    list-style-image: url("chrome://dmapex/skin/icon36.png");
+}
+
+/* Firefox 애드온 툴바에 나타날때 아이콘 모양 */
+[iconsize="small"] #dmapex_toolbarButton {
+    list-style-image: url("chrome://dmapex/skin/icon16.png");
+}
+
+#dmapex_toolbarButton[cui-areatype="menu-panel"],
+toolbarpaletteitem[place="palette"] > #dmapex_toolbarButton {
+    list-style-image: url("chrome://dmapex/skin/icon36.png");
+}
+
+#dmap_iframe {
+    border: 2px solid;
+    border-bottom-color: #f1695d;
+    border-right-color: #fbbd00;
+    border-left-color: #6190fc;
+    border-top-color: #adca00;
+}

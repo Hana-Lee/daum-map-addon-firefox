@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<title>Daum Map Extention</title>
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<meta content="IE=Edge" http-equiv="X-UA-Compatible">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+    <meta http-equiv="Content-Style-Type" content="text/css">
+	
+	<script 
+		src="http://apis.daum.net/maps/maps3.js?apikey=f253a93bfeed8f05e518e213ba7d72d75ecc5ba4"
+		charset="UTF-8">
+	</script>
+	<script src="jquery-1.11.1.min.js"></script>
+	<script src="jquery.xml2json.js"></script>
+	<script src="jquery.xdomainajax.js"></script>
+	<script>
+		var dmap, marker;
+		var currentProtocol = (location.protocol === 'https:') ? 'https:' : 'http:';
+		var addrToCoordApiUrl = currentProtocol + "//apis.daum.net/local/geo/addr2coord?apikey=";
+		var transcoordApiUrl = currentProtocol + "//apis.daum.net/local/geo/transcoord?apikey=";
+
+		var localApiKey = "762adc60e9117688aaddea05703f8a4a2d46974a";
+		var dMapApiKey = "f253a93bfeed8f05e518e213ba7d72d75ecc5ba4";
+
+		var searchResultBody = "searchResultB";
+		var searchResultHeader = "searchResultH";
+		//var clipboardData = "";
+
+		var currentAddress, currentPlaceName;
+
+		function init_dmapex(isReset) {
+			/* 다음 스페이스닷원 - 기본 위치 */
+			var latValue = 33.45104821486364;
+			var lngValue = 126.57120834405893;
+
+			var map_container = document.getElementById('dmap_container');
+			var position = new daum.maps.LatLng(latValue, lngValue);
+			var map_opt = {
+				center : position,
+				level : 3
+			};
+			dmap = new daum.maps.Map(map_container, map_opt);
+
+			var zoomControl = new daum.maps.ZoomControl();
+			dmap.addControl(zoomControl, daum.maps.ControlPosition.RIGHT);
+			var mapTypeControl = new daum.maps.MapTypeControl();
+			dmap.addControl(mapTypeControl, daum.maps.ControlPosition.TOPRIGHT);
+
+			makeMarker(dmap, position);
+			
+			var useClipboardData = true;
+			if (isReset) {
+				useClipboardData = false;
+			} else {
+				searchResion('find_addr', useClipboardData);
+			}
+		}
+
+		function makeMarker(mapObj, position) {
+			if (marker != null) {
+				marker.setVisible(false);
+				marker = null;
+			}
+
+			marker = new daum.maps.Marker({
+				position : position
+			});
+
+			mapObj.setCenter(position);
+			marker.setMap(mapObj);
+		}
+
+		function makeMarkerWithPosition(lat, lng, title, placeName) {
+			if (!title) title = currentAddress;
+			if (!placeName) placeName = currentPlaceName;
+			var position = new daum.maps.LatLng(lat, lng);
+			makeMarker(dmap, position);
+			printMapTitle(title, placeName);
+		}
+
+		function printMapTitle(title, placeName) {
+			if (placeName) {
+				title = placeName;
+			}
+			var titleElem = document.getElementById('map_title');
+			titleElem.innerHTML = title;
+		}
+
+		function searchResion(id, useClipboardData) {
+			document.getElementById("addr_list").innerHTML = "";
+			document.getElementById("map_title").innerHTML = "";
+			var queryString = getQueryString(id, useClipboardData);
+						
+			if(queryString == null || queryString == ""){
+				if (!useClipboardData)
+					alert("검색어를 입력해 주세요");
+				return;
+			}
+
+			var searchUrl = "http://openapi.naver.com/search";
+			var param = {
+				key : "84f73922a3d96fd137e00549f944b472",
+				target : "local",
+				query : queryString,
+				display: 10,
+				start : 1
+			};
+		    $.ajax({
+		    	url : searchUrl,
+		    	dataType : 'xml',
+		    	type : 'GET',
+		    	data : param,
+		    	success : function(result) {
+		    		var myXML = result.responseText;
+					var JSONConvertedXML = $.xml2json(myXML.replace('<rss version="2.0">','').replace('</rss>',''));
+					var resultCount = Number(JSONConvertedXML.display);
+					if (resultCount === 0) {
+						searchAddressToLatLng(id, useClipboardData);
+					} else {
+						var resultItems = JSONConvertedXML.item;
+						makeResultHtml(resultItems, 'n');
+					}
+		    	}
+		    });
+		}
+		
+		function searchAddressToLatLng(id, useClipboardData) {
+			var queryString = getQueryString(id, useClipboardData);
+						
+			if(queryString == null || queryString == ""){
+				if (!useClipboardData)
+					alert("검색어를 입력해 주세요");
+				return;
+			}
+			
+			searchAddress(queryString);
+		}
+
+		function getQueryString(id, useClipboardData) {
+			var queryString;
+			var queryElem = document.getElementById(id);
+
+			if (!useClipboardData) {
+				queryString = queryElem.value;
+			} else {
+				var clipboardData = getClipboardData();
+
+				if (clipboardData) {
+					queryString = clipboardData;
+					queryElem.value = queryString;
+				}
+			}
+
+			return queryString;
+		}
+
+		function getClipboardData() {
+			var parentDocument = window.parent;
+			var clipboardData;
+			if (parentDocument && (parentDocument !== this.window)) {
+				clipboardData = parentDocument.DmapEx.overlay.getClipboardData();
+			}
+
+			return clipboardData;
+		}
+		
+		function searchAddress(queryString) {
+		    var url = addrToCoordApiUrl
+				+ localApiKey
+				+ "&output=xml"
+				+ "&q=" + encodeURI(queryString);
+
+		    $.ajax({
+		    	url : url,
+		    	dataType : "xml",
+		    	type : 'GET',
+		    	success : function(result) {
+		    		var myXML = result.responseText;
+					var JSONConvertedXML = $.xml2json(myXML);
+					var resultCount = Number(JSONConvertedXML.totalCount);
+
+					addrSearchCallback(JSONConvertedXML.item);
+		    	}
+		    });
+		}
+		
+		function addrSearchCallback(result) {
+			var newResult = [];
+			if (result.constructor === Object) {
+				newResult.push(result);
+			} else {
+				newResult = result;
+			}
+			makeResultHtml(newResult, 'd');
+		}
+
+		function makeResultHtml(items, type) {
+			if (!type) type = 'd';
+
+			var totalCount = items.length;
+			switch(type) {
+				case 'n':
+					for (var i = 0; i < totalCount; i++) {
+						var address = strip_tag(items[i].roadAddress);
+						var placeName = strip_tag(items[i].title);
+						var secondAddress = strip_tag(items[i].address);
+
+						if (!address) address = secondAddress;
+
+						var xPosition = items[i].mapx;
+						var yPosition = items[i].mapy;
+
+						var param = [];
+						param.push(xPosition);
+						param.push(yPosition);
+						param.push("'" + address + "'");
+						param.push("'" + placeName + "'");
+						param = param.join(",");
+
+						var hrefString = "<a href=\"javascript:convertToWgs84FromKtm(" + param + ")\">";
+
+						var newHtml = "<div class='addr_result'>"
+							+ hrefString
+							+ placeName
+							+ "<br />"
+							+ address
+							+ "<br />"
+							+ secondAddress
+							+ "</a></div>";
+
+						if (totalCount === 1) {
+							convertToWgs84FromKtm(xPosition, yPosition, address, placeName);
+							document.getElementById('addr_list_td').style.display = 'none';
+						} else {
+							document.getElementById('addr_list_td').style.display = 'table-cell';
+						}
+
+						document.getElementById("addr_list").innerHTML += newHtml;
+					}
+					break;
+				case 'd':
+					for (var i = 0; i < totalCount; i++) {
+						var address = strip_tag(items[i].title);
+						var buildingName = strip_tag(items[i].buildingAddress);
+						var secondAddress = strip_tag(items[i].localName_1 + " " + items[i].localName_2 + " " + items[i].newAddress);
+						var latValue = items[i].lat;
+						var lngValue = items[i].lng;
+
+						var param = [];
+						param.push(latValue);
+						param.push(lngValue);
+						param.push("'" + address + "'");
+						param.push("'" + buildingName + "'");
+						param = param.join(",");
+
+						var hrefString = "<a href=\"javascript:makeMarkerWithPosition(" + param + ")\">";
+
+						var newHtml = "<div class='addr_result'>"
+							+ hrefString
+							+ address
+							+ "<br />"
+							+ secondAddress
+							+ "</a></div>";
+
+						if (totalCount === 1) {
+							makeMarkerWithPosition(latValue, lngValue, address, buildingName);
+							document.getElementById('addr_list_td').style.display = 'none';
+						} else {
+							document.getElementById('addr_list_td').style.display = 'table-cell';
+						}
+
+						document.getElementById("addr_list").innerHTML += newHtml;
+					}
+					break;
+			}
+			dmap.relayout();
+		}
+
+		function convertToWgs84FromKtm(ktmX, ktmY, address, placeName) {
+			currentADdress = address;
+			currentPlaceName = placeName;
+
+		    var url = transcoordApiUrl
+				+ localApiKey
+				+ "&output=xml"
+				+ "&x=" + ktmX
+				+ "&y=" + ktmY
+				+ "&fromCoord=ktm&toCoord=wgs84";
+
+		    $.ajax({
+		    	url : url,
+		    	dataType : 'xml',
+		    	type : 'GET',
+		    	success : function(result) {
+		    		var myXML = result.responseText;
+					var JSONConvertedXML = $.xml2json(myXML);
+		    		
+		    		convertToWgs84FromKtmCallback(JSONConvertedXML);
+		    	}
+		    });
+		}
+
+		function convertToWgs84FromKtmCallback(result) {
+			var latValue = result.y;
+			var lngValue = result.x;
+
+			makeMarkerWithPosition(latValue, lngValue);
+		}
+
+		function strip_tag (str)
+		{
+			str = str.replace(/&lt;/g, '<').replace(/&gt;/g,'>');
+			return str.replace(/(<([^>]+)>)/ig,"");
+		}
+		
+		function searchTypeChange(elem) {
+			if (!elem) return;
+			var selectedValue = elem.value;
+			if (selectedValue === 'search_map') {
+				document.getElementById('search_way').style.display = 'none';
+				document.getElementById('search_map').style.display = 'block';
+			} else {
+				document.getElementById('search_map').style.display = 'none';
+				document.getElementById('search_way').style.display = 'block';
+			}
+		}
+
+		function resetMap() {
+			dmap = null;
+			marker = null;
+			currentAddress = null;
+			currentPlaceName = null;
+			
+			document.getElementById('dmap_container').innerHTML = "";
+			document.getElementById('find_addr').value = "";
+			document.getElementById('addr_list').innerHTML = "";
+			document.getElementById('addr_list_td').style.display = 'none';
+
+			init_dmapex(true);
+		}
+
+		function showFullMap() {
+			var daumMapUrl = "http://map.daum.net?map_type=TYPE_MAP&map_hybrid=false&q=";
+			var queryString = document.getElementById('find_addr').value;
+			if (queryString == null || queryString == "") {
+				alert("검색어를 입력해주세요~")
+			} else {
+				window.open(daumMapUrl + encodeURI(queryString), "_blank");
+			}
+		}
+	</script>
+	<style>
+		html,body {
+			height: 100%;
+			width: 100%;
+			padding: 0px;
+			margin: 0px;
+			overflow: hidden;
+		}
+		#dmap_container {
+			width: 100%;
+			height: 100%;
+		}
+
+		#addr_list .addr_result {
+			font-size: 10pt;
+			margin-bottom: 5px;
+			border: 1px solid lightgray;
+		}
+	</style>
+</head>
+<body onload="init_dmapex();">
+	<div style="">
+		<div id="search_map">
+			<input id="find_addr" type="text" placeholder="검색어를 입력하세요" style="width:250px;" value="" />
+			<input type="button" onclick="searchResion('find_addr', false);" value="검색" />
+			<input type="button" onclick="resetMap();" value="초기화" />
+			<input type="button" onclick="showFullMap();" value="큰지도보기" />
+		</div>
+		<div id="search_way" style="float:left;display:none;">
+			<label for="start_addr">출발</label>
+			<input type="text" id="start_addr" placeholder="출발지" />
+			<label for="arr_addr">도착</label>
+			<input type="text" id="end_addr" placeholder="도착지" />
+		</div>
+		<div id="search_type" style="float:right;display:none;">
+			<input type="radio" name="search_type" value="search_map" checked="checked" onclick="searchTypeChange(this);">지도검색</input>
+			<input type="radio" name="search_type" value="search_way" onclick="searchTypeChange(this);">길찾기</input>
+		</div>
+	</div>
+	<table style="width:100%;height:430px;padding:0px;margin:0px;">
+		<thead style="height:22px;display:none;">
+			<tr><th colspan="2"><span id="map_title"></span></th></tr>
+		</thead>
+		<tbody>
+			<tr style="height:100%;">
+				<td id="addr_list_td" style="width:20%;display:none;">
+					<div id="addr_list" style="height:420px;overflow:auto;"></div>
+				</td>
+				<td id="dmap_td">
+					<div id="dmap_container">
+						Map Container
+					</div>
+				</td>
+			<tr>
+		</tbody>
+	</table>
+</body>
+</html>

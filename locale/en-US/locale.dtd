@@ -1,0 +1,9 @@
+<!ENTITY location.current.label  "현재위치" >
+<!ENTITY location.arrival.label  "도착위치" >
+<!ENTITY location.search.label   "검색" >
+<!ENTITY location.findway.label  "길찾기" >
+<!ENTITY map.save.label          "저장" >
+<!ENTITY map.share.label         "공유" >
+<!ENTITY map.reset.label         "초기화" >
+<!ENTITY map.saved.list.label    "저장목록" >
+<!ENTITY map.title               "다음지도 애드온" >

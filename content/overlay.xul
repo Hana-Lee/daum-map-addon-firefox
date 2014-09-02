@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://dmapex/skin/skin.css" type="text/css"?>
+<!DOCTYPE overlay SYSTEM
+  "chrome://dmapex/locale/locale.dtd">
+
+<overlay id="dmapexOverlay"
+         xmlns:html="http://www.w3.org/1999/xhtml"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <script type="application/x-javascript"
+          src="chrome://dmapex/content/overlay.js" />
+  
+  <stringbundleset id="stringbundleset">
+    <stringbundle id="string-bundle"
+                  src="chrome://dmapex/locale/locale.properties" />
+  </stringbundleset>
+  
+  <commandset id="mainCommandSet">
+    <command id="Tasks:HelloWorld" oncommand="DmapEx.overlay.openAreaPopup(event);"/>
+  </commandset>
+  <!-- Evernote toolbar xul
+  <toolbarpalette id="BrowserToolbarPalette">
+      <toolbarbutton id="webclipper3-button" label="&add_to_evernote;"
+                     class="toolbarbutton-1 chromeclass-toolbar-additional"
+                     tooltiptext="&add_to_evernote_tooltip;"
+                     oncommand="evernote_doAction( null );">
+          <stack>
+              <image class="toolbarbutton-icon" left="0" top="0"/>
+              <label id="webclipper3-button-label" value="1234" top="13" left="5" right="0" class="big toolbar-value"/>
+          </stack>
+          <label class="toolbarbutton-text" crop="right" value="&add_to_evernote;"/>
+      </toolbarbutton>
+  </toolbarpalette>
+  -->
+  <!--
+      toolbarbutton 의 class 에 기본적으로 toolbarbutton-1 이 있어야 마우스 오버시
+      효과가 나타난다. chromeclass-toolbar-additional 은 아직 파악 안됨
+  -->
+  <toolbarpalette id="BrowserToolbarPalette">
+      <toolbarbutton id="dmapex_toolbarButton"
+                     class="toolbarbutton-1 chromeclass-toolbar-additional"
+                     label="다음지도 애드온"
+                     observes="Tasks:HelloWorld"
+                     tooltiptext="다음 지도 애드온!">
+      </toolbarbutton>
+  </toolbarpalette>
+  
+  <popupset id="mainPopupSet">
+  <panel id="map_area"
+         type="arrow"
+         noautofocus="true"
+         consumeoutsideclicks="true"
+         noautohide="false"
+         onpopupshown="DmapEx.overlay.handleOnPopupLoad();"
+         level="parent">
+    <vbox id="iframe_container" align="top" flex="1"> 
+      <iframe id="dmap_iframe" flex="1" src="" width="500" height="450" />
+    </vbox>
+   </panel>
+  </popupset>
+  <!--
+  <toolbarpalette id="BrowserToolbarPalette">
+      <toolbarbutton id="dmapex_toolbarButton"
+                     class="toolbarbutton-1 chromeclass-toolbar-additional"
+                     label="다음지도 애드온"
+                     type="panel"
+                     tooltiptext="다음 지도 애드온!">
+        <panel id="map_area"
+               type="arrow"
+               noautofocus="true"
+               consumeoutsideclicks="true"
+               noautohide="true"
+               onpopupshowing="DmapEx.overlay.handleOnPopupLoad();"
+               onpopuphiding="DmapEx.overlay.handleOnPopupHiding();"
+               level="parent">
+          <vbox id="iframe_container" align="top" flex="1">
+            <toolbox>
+              <toolbar id="nav-toolbar">
+                <toolbarbutton label="Back" />
+                <toolbarbutton label="Forward" />
+                <textbox id="urlfield" />
+              </toolbar>
+            </toolbox>
+            <iframe id="dmap_iframe" src="about:blank" width="450" height="450" flex="1" />
+          </vbox>
+        </panel>
+      </toolbarbutton>
+  </toolbarpalette>
+  -->
+  <!--
+  지도 URL
+  http://map.daum.net/
+  ?wx=398155&wy=-10385 (좌표)
+  &map_type=TYPE_MAP (지도 타입)
+  &map_hybrid=false (하이브리드 동작안함?)
+  &urlLevel=3 (확인 필요)
+  &q=%EC%A0%9C%EC%A3%BC%EB%8C%80%ED%95%99%EA%B5%90 (제주대학교)
+  &srcid=11250683 (생략가능)
+  
+  길찾기 (자동차)
+  http://map.daum.net/
+  (제주국제공항)
+  ?sName=%EC%A0%9C%EC%A3%BC%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD
+  (제주대학교 아라캠퍼스)
+  &eName=%EC%A0%9C%EC%A3%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EC%95%84%EB%9D%BC%EC%BA%A0%ED%8D%BC%EC%8A%A4
+  &E_X=398155&E_Y=-10383 (도착 좌표)
+  &ids=,P11250683 (생략가능)
+  
+  길찾기 (대중교통)
+  http://map.daum.net/
+  (제주국제공항)
+  ?sName=%EC%A0%9C%EC%A3%BC%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD
+  (제주대학교 아라캠퍼스)
+  &eName=%EC%A0%9C%EC%A3%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EC%95%84%EB%9D%BC%EC%BA%A0%ED%8D%BC%EC%8A%A4
+  &target=traffic (검색 종류)
+  &E_X=398155&E_Y=-10383 (도착지 좌표)
+  -->
+</overlay>

@@ -1,0 +1,15 @@
+
+
+
+
+
+
+
+content dmapex jar:dmapex.jar!/content/ contentaccessible=yes
+skin dmapex classic/1.0 jar:dmapex.jar!/skin/
+locale dmapex ko-KR jar:dmapex.jar!/locale/ko-KR/
+locale dmapex en-US jar:dmapex.jar!/locale/en-US/
+
+
+overlay chrome://browser/content/browser.xul chrome://dmapex/content/overlay.xul
+style chrome://global/content/customizeToolbar.xul chrome://dmapex/skin/skin.css
